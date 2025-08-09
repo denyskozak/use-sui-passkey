@@ -14,5 +14,5 @@
     "skipLibCheck": true, // Skip type checking for node_modules
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "example"]
 }
