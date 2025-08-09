@@ -3,7 +3,7 @@
 
 `use-sui-passkey` is a lightweight React hook that simplifies integrating [Sui](https://sui.io) Passkey authentication. It exposes helper functions for registering and signing in with a Passkey and tracks basic state like loading or error information.
 
-[![welcome](https://raw.githubusercontent.com/denyskozak/use-sui-passkeys/refs/heads/main/welcome.png)](https://www.npmjs.com/package/use-sui-passkey)
+[![welcome](https://raw.githubusercontent.com/denyskozak/use-sui-passkey/refs/heads/main/welcome.png)](https://www.npmjs.com/package/use-sui-passkey)
 
 
 ## Installation

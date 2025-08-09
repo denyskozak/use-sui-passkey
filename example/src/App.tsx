@@ -1,4 +1,4 @@
-import {useSuiPasskey} from '../../src';
+import {useSuiPasskey} from 'use-sui-passkey';
 import {Transaction} from "@mysten/sui/transactions";
 import {getFaucetHost, requestSuiFromFaucetV2} from "@mysten/sui/faucet";
 import {useCallback, useLayoutEffect, useState} from "react";
