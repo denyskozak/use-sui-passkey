@@ -1,6 +1,6 @@
 {
-  "name": "use-sui-passkeys",
-  "version": "1.0.1",
+  "name": "use-sui-passkey",
+  "version": "1.0.2",
   "type": "module",
   "description": "A React hook for Sui passkeys",
   "repository": {

@@ -1,14 +1,14 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {DependencyList} from 'react';
 import {
     BrowserPasskeyProvider,
     PasskeyKeypair,
 } from '@mysten/sui/keypairs/passkey';
 import {fromBase64, toBase64} from '@mysten/sui/utils';
-import type {PublicKey} from "@mysten/sui/src/cryptography/publickey";
+import type {PublicKey} from "@mysten/sui/cryptography";
 
 /**
- * Minimal, SSR-safe React hook around Sui Passkeys.
+ * Minimal, SSR-safe React hook around Sui Passkey.
  *
  * Features:
  * - Create (register) a new passkey wallet for the current origin
@@ -82,7 +82,7 @@ function findCommonPublicKey(a: PublicKey[], b: PublicKey[]) {
     return match ?? null;
 }
 
-export function useSuiPasskeys(options: UseSuiPasskeyOptions): UseSuiPasskey {
+export function useSuiPasskey(options: UseSuiPasskeyOptions): UseSuiPasskey {
     const {
         rpName,
         rpId,
@@ -240,8 +240,8 @@ export function useSuiPasskeys(options: UseSuiPasskeyOptions): UseSuiPasskey {
  * Optional tiny helper: creates a preconfigured hook you can export from your app/library
  * so consumers don't have to pass rpName every time.
  */
-export function makeUseSuiPasskeys(defaults: UseSuiPasskeyOptions) {
+export function makeUseSuiPasskey(defaults: UseSuiPasskeyOptions) {
     return function useDefaultedSuiPasskey(overrides?: Partial<UseSuiPasskeyOptions>) {
-        return useSuiPasskeys({...defaults, ...(overrides ?? {})});
+        return useSuiPasskey({...defaults, ...(overrides ?? {})});
     };
 }

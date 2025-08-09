@@ -1,4 +1,4 @@
-import {useSuiPasskeys} from '../../src';
+import {useSuiPasskey} from '../../src';
 import {Transaction} from "@mysten/sui/transactions";
 import {getFaucetHost, requestSuiFromFaucetV2} from "@mysten/sui/faucet";
 import {useCallback, useLayoutEffect, useState} from "react";
@@ -21,7 +21,7 @@ function App() {
         signTransaction,
         loading,
         error
-    } = useSuiPasskeys({rpName: 'My Dapp', authenticatorAttachment: 'platform'});
+    } = useSuiPasskey({rpName: 'My Dapp', authenticatorAttachment: 'platform'});
 
     const [balance, setBalance] = useState(0);
     const [txDigest, setTxDigest] = useState('');
