@@ -1,11 +1,11 @@
 {
   "name": "use-sui-passkey",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "type": "module",
   "description": "A React hook for Sui passkeys",
   "repository": {
     "type": "git",
-    "url": "https://github.com/denyskozak/react-sui-zk-login-kit"
+    "url": "https://github.com/denyskozak/use-sui-passkey"
   },
   "scripts": {
     "build": "tsc",
