@@ -1,15 +1,38 @@
 import {useSuiPasskey} from 'use-sui-passkey';
 import {Transaction} from "@mysten/sui/transactions";
 import {getFaucetHost, requestSuiFromFaucetV2} from "@mysten/sui/faucet";
-import {useCallback, useLayoutEffect, useState} from "react";
-import {SuiClient} from "@mysten/sui/client";
+import {useEffect, useState} from "react";
+import {SuiGrpcClient} from "@mysten/sui/grpc";
 
-const FULLNODE_URL = "https://fullnode.devnet.sui.io/";
-const suiClient = new SuiClient({url: FULLNODE_URL});
+const suiClient = new SuiGrpcClient({
+    baseUrl: "https://fullnode.devnet.sui.io:443",
+    network: "devnet",
+});
 
 function mistToSui(mistAmount: bigint | number): number {
     const MIST_PER_SUI = 1_000_000_000; // 1 SUI = 10^9 MIST
     return Number(mistAmount) / MIST_PER_SUI;
+}
+
+async function getSuiBalance(owner: string): Promise<number> {
+    const coins = await suiClient.listCoins({
+        owner,
+        coinType: "0x2::sui::SUI",
+    });
+    const sum = coins.objects.reduce((total, coin) => total + BigInt(coin.balance), 0n);
+    return mistToSui(sum);
+}
+
+async function waitForUpdatedBalance(owner: string, previousBalance: number): Promise<number> {
+    const maxAttempts = 15;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const nextBalance = await getSuiBalance(owner);
+        if (nextBalance !== previousBalance) return nextBalance;
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+
+    return getSuiBalance(owner);
 }
 
 function App() {
@@ -25,28 +48,41 @@ function App() {
 
     const [balance, setBalance] = useState(0);
     const [txDigest, setTxDigest] = useState('');
+    const [faucetLoading, setFaucetLoading] = useState(false);
 
-    const getSuiCoins = useCallback(async () => {
-      const coins = await suiClient.getCoins({
-            owner: address || '',
-            coinType: "0x2::sui::SUI"
+    useEffect(() => {
+        if (!address) return;
+        let cancelled = false;
+        void getSuiBalance(address).then((nextBalance) => {
+            if (!cancelled) setBalance(nextBalance);
         });
-
-        const sum = coins?.data?.reduce((sum, coin) => sum + Number(coin.balance), 0) || 0;
-        setBalance(mistToSui(sum))
-    }, [address]);
-
-    useLayoutEffect(() => {
-        getSuiCoins()
+        return () => {
+            cancelled = true;
+        };
     }, [address]);
 
     const faucetHandle = async (recipient: string) => {
-        console.log("normalizeSuiAddress: ",address);
-        await requestSuiFromFaucetV2({
-            host: getFaucetHost('devnet'),
-            recipient,
-        });
-        getSuiCoins();
+        setFaucetLoading(true);
+        try {
+            const previousBalance = await getSuiBalance(recipient);
+            const response = await requestSuiFromFaucetV2({
+                host: getFaucetHost('devnet'),
+                recipient,
+            });
+
+            if (response.status !== 'Success' || !response.coins_sent?.length) {
+                throw new Error('Faucet did not return any coins.');
+            }
+
+            const digests = new Set(response.coins_sent.map((coin) => coin.transferTxDigest));
+            await Promise.all([...digests].map((digest) => suiClient.waitForTransaction({
+                digest,
+                timeout: 30_000,
+            })));
+            setBalance(await waitForUpdatedBalance(recipient, previousBalance));
+        } finally {
+            setFaucetLoading(false);
+        }
     }
 
     const executeTestTX = async () => {
@@ -60,14 +96,15 @@ function App() {
         tx.setSender(address || '');
         const txBlock = await tx.build({client: suiClient});
         const {signature} = await signTransaction(txBlock);
-        const {digest} = await suiClient.executeTransactionBlock({
-            transactionBlock: txBlock,
-            signature
-        })
+        const result = await suiClient.executeTransaction({
+            transaction: txBlock,
+            signatures: [signature],
+        });
+        const {digest} = result.Transaction ?? result.FailedTransaction;
         if (digest) {
             setTxDigest(digest)
         }
-        getSuiCoins();
+        if (address) setBalance(await getSuiBalance(address));
     }
 
     if (!supported) return <button disabled>Passkeys unsupported</button>;
@@ -81,7 +118,9 @@ function App() {
             <button disabled={loading} onClick={() => create()}>Create passkey</button>
             <button disabled={loading} onClick={() => recoverTwoStep()}>Recover</button>
 
-            {address ? <button disabled={!address} onClick={() => faucetHandle(address)}>Faucet</button> : null}
+            {address ? <button disabled={faucetLoading} onClick={() => {
+                faucetHandle(address).catch((e) => console.error(e));
+            }}>{faucetLoading ? 'Funding…' : 'Faucet'}</button> : null}
             {address ? <button disabled={loading} onClick={() => {
                 executeTestTX().catch((e) => console.error(e));
             }}>Execute Transaction
